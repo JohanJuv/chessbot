@@ -15,8 +15,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="chess.cpp">
+    <ClCompile Include="shakki.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="asema.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="asema.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shakki.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
