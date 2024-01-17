@@ -1,15 +1,20 @@
 #pragma once
 #include "shakki.h"
+#include "siirto.h"
 
 class Asema
 {
 
 public:
 	void tyhjenna();
+	void tee_siirto(const Siirto& s);
+
+	// Läksy tulosta lauta ascii-grafiikkana
+	void tulosta() const;
 
 private:
 
-	// Laudan nappulat. Indeksointi [rivi][sarake], esim
+	// Laudan nappulat. Indeksointi [rivi][linja], esim
 	//
 	// [7][0] : vasen alanurkka ("a1")
 	// [7][7] : oikea alanurkka ("h1")

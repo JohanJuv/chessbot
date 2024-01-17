@@ -29,5 +29,8 @@
     <ClInclude Include="shakki.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="siirto.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

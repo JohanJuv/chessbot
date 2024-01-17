@@ -133,6 +133,7 @@
   <ItemGroup>
     <ClInclude Include="asema.h" />
     <ClInclude Include="shakki.h" />
+    <ClInclude Include="siirto.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
