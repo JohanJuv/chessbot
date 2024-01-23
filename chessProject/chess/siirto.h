@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "shakki.h"
 
 // Kuvaa aseman muutosta.
 class Siirto
@@ -12,15 +13,10 @@ public:
 	// Parsi siirto stringistä
 	// esimn e2e4 tai g8f6
 	Siirto(const std::string& s) {
-		const char a_r = s[1];
-		const char a_l = s[0];
-		const char l_r = s[3];
-		const char l_l = s[2];
-
-		_a_r = 56 - (unsigned int)a_r;
-		_a_l = (unsigned int)a_l - 97;
-		_l_r = 56 - (unsigned int)l_r;
-		_l_l = (unsigned int)l_l - 97;
+		_a_r = 56 - (unsigned int)s[1];
+		_a_l = (unsigned int)s[0] - 97;
+		_l_r = 56 - (unsigned int)s[3];
+		_l_l = (unsigned int)s[2] - 97;
 	}
 
 private:

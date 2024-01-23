@@ -128,10 +128,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="asema.cpp" />
+    <ClCompile Include="nappula.cpp" />
     <ClCompile Include="shakki.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="asema.h" />
+    <ClInclude Include="nappula.h" />
     <ClInclude Include="shakki.h" />
     <ClInclude Include="siirto.h" />
   </ItemGroup>

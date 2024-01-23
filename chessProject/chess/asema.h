@@ -1,6 +1,9 @@
 #pragma once
+#include <vector>
 #include "shakki.h"
 #include "siirto.h"
+#include "nappula.h"
+
 
 class Asema
 {
@@ -10,25 +13,24 @@ public:
 	void tee_siirto(const Siirto& s);
 
 	// Läksy tulosta lauta ascii-grafiikkana
+	Nappula* _lauta[8][8];
+
 	void tulosta() const;
+	static Nappula* wk, * wq, * wr, * wb, * wn, * wp;
+	static Nappula* bk, * bq, * br, * bb, * bn, * bp;	
+
+	void anna_tornin_raakasiirrot(int rivi, int linja, int pelaaja,
+		std::vector<Siirto>& siirrot) const;
+
+	Asema();
 
 private:
 
-	// Laudan nappulat. Indeksointi [rivi][linja], esim
+	// Laudan Nappulat. Indeksointi [rivi][linja], esim
 	//
 	// [7][0] : vasen alanurkka ("a1")
 	// [7][7] : oikea alanurkka ("h1")
 	//
-	int _lauta[8][8] = {
-		{bR, bN, bB, bQ, bK, bB, bN, bR},
-		{bP, bP, bP, bP, bP, bP, bP, bP},
-		{NA, NA, NA, NA, NA, NA, NA, NA},
-		{NA, NA, NA, NA, NA, NA, NA, NA},
-		{NA, NA, NA, NA, NA, NA, NA, NA},
-		{NA, NA, NA, NA, NA, NA, NA, NA},
-		{wP, wP, wP, wP, wP, wP, wP, wP},
-		{wR, wN, wB, wQ, wK, wB, wN, wR}
-	};
 
 	int _siirtovuoro = VALKEA;
 };
