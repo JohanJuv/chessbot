@@ -1,9 +1,13 @@
 #pragma once
-#include <list>
 
 // Pelaajat.
 enum { VALKEA, MUSTA };
 
-// Vakioarvot nappuloille. (NA = enmpty)
-enum { wR, wN, wB, wQ, wK, wP, bR, bN, bB, bQ, bK, bP, NA};
+// Vakioarvot eri nappululoille (NA = tyhjä ruutu).
+enum { wR, wN, wB, wQ, wK, wP, bR, bN, bB, bQ, bK, bP, NA };
 
+// Palauttaa annetun nappulan värin (VALKEA, MUSTA).
+int nappulan_vari(int nappula);
+
+// Palauttaa vastustajan.
+int vastustaja(int pelaaja);

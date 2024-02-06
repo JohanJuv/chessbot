@@ -21,7 +21,10 @@
     <ClCompile Include="asema.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="nappula.cpp">
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Siirto.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -33,9 +36,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="siirto.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="nappula.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,19 +1,20 @@
-#include "asema.h"
-#include <vector>
+#include "shakki.h"
 
-int main()
+int nappulan_vari(int nappula)
 {
-    Asema asema;
-    asema.tulosta();
-    //e2e4
-    Siirto siirto1(6, 4, 4, 4);
-    Siirto siirto("a1d4");
-    asema.tee_siirto(siirto);
-    asema.tulosta();
+	switch (nappula)
+	{
+		case wR: case wN: case wB: case wQ: case wK: case wP:
+			return VALKEA;
+			break;
+		default:
+			return MUSTA;
+			break;
+	}
+}
 
-    std::vector<Siirto> siirrot;
 
-    asema.anna_tornin_raakasiirrot(4, 3, 0, siirrot);
-
-    return 0;
+int vastustaja(int pelaaja)
+{
+	return pelaaja == VALKEA ? VALKEA : MUSTA;
 }
