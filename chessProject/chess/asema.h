@@ -8,6 +8,8 @@ class Asema
 {
 public:
 
+
+
 	// Tyhjent‰‰ laudan.
 	void tyhjenna();
 
@@ -24,13 +26,15 @@ public:
 	// SIirtogeneraattori
 	// Tuottaa aseman kaikki lailliset siirrot.
 	void anna_siirrot(std::vector<Siirto>& siirrot);
+
+	void anna_linnoitukset(int pelaaja, std::vector<Siirto>& siirrot) const;
 	
 
 	// Generoidaan uhkaavan pelaaja raakasiirrot
 
 	// Tutkitaan, onko jonkin raakasiirron loppukoordinaatit == rivi, linka
 	// jos on, palauta true (muuten false)
-	bool onko_ruutu_uhattu(int rivi, int linja, int uhkaava_pelaaaja);
+	bool onko_ruutu_uhattu(int rivi, int linja, int uhkaava_pelaaaja) const;
 
 	// Antaa aseman kaikki raakasiirrot
 	void anna_kaikki_raakasiirrot(int pelaaja, std::vector<Siirto>& siirrot) const;
@@ -81,7 +85,27 @@ public:
 		{ wP, wP, wP, wP, wP, wP, wP, wP },
 		{ wR, wN, wB, wQ, wK, wB, wN, wR }
 	};
+	// Testausta varten
+	//int _lauta[8][8] = {
+	//{ NA, NA, NA, NA, NA, NA, NA, NA },
+	//{ NA, NA, NA, NA, NA, NA, NA, NA },
+	//{ NA, NA, NA, NA, NA, NA, NA, NA },
+	//{ NA, NA, NA, NA, NA, NA, NA, NA },
+	//{ NA, NA, NA, NA, NA, bR, NA, NA },
+	//{ NA, NA, NA, NA, NA, NA, NA, NA },
+	//{ NA, NA, NA, NA, NA, NA, NA, NA },
+	//{ NA, NA, NA, NA, wK, NA, NA, wR }
+	//};
 
 	int _siirtovuoro = VALKEA;
+
+	// Kirjanpito siit‰, onko kuningaas tai torni liikkunut.
+	// Asetetaan tarpeen mukaan falseksi.
+	bool _valkea_lyhyt_linna_sallittu = true;
+	bool _valkea_pitka_linna_sallittu = true;
+	bool _musta_lyhyt_linna_sallittu = true;
+	bool _musta_pitka_linna_sallittu = true;
+
+	int _kaksoisaskel_linjalla = -1;
 };
 

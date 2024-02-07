@@ -20,6 +20,7 @@ void Asema::anna_siirrot(vector<Siirto>& siirrot)
 	// J‰tt‰‰ kuninkaan uhatuksi.
 	std::vector<Siirto> raakasiirrot;
 	anna_kaikki_raakasiirrot(pelaaja, raakasiirrot);
+	anna_linnoitukset(pelaaja, raakasiirrot);
 
 	// Testataan jokainen raakasiirto.
 	for (Siirto& rs : raakasiirrot)
@@ -78,6 +79,32 @@ void Asema::anna_kaikki_raakasiirrot(int pelaaja, std::vector<Siirto>& siirrot) 
 }
 
 
+void Asema::anna_linnoitukset(int pelaaja, std::vector<Siirto>& siirrot) const {
+	if (pelaaja == VALKEA) {
+		// Onko valkea kuningas uhattu
+		if (!onko_ruutu_uhattu(7, 4, MUSTA)) {
+			if (_valkea_lyhyt_linna_sallittu && _lauta[7][5] == NA && _lauta[7][6] == NA && !onko_ruutu_uhattu(7, 5, MUSTA)) {
+				siirrot.push_back(Siirto("e1g1"));
+			}
+			if (_valkea_pitka_linna_sallittu && _lauta[7][1] == NA && _lauta[7][2] == NA && _lauta[7][3] == NA &&
+				_lauta[7][6] == NA && !onko_ruutu_uhattu(7, 3, MUSTA)) {
+				siirrot.push_back(Siirto("e1c1"));
+			}
+		}
+	}
+	else {
+		if (!onko_ruutu_uhattu(0, 4, VALKEA)) {
+			if (_musta_lyhyt_linna_sallittu && _lauta[0][5] == NA && _lauta[0][6] == NA && !onko_ruutu_uhattu(0, 5, VALKEA)) {
+				siirrot.push_back(Siirto("e8g8"));
+			}
+			if (_musta_pitka_linna_sallittu && _lauta[0][1] == NA && _lauta[0][2] == NA && _lauta[0][3] == NA &&
+				_lauta[0][6] == NA && !onko_ruutu_uhattu(0, 3, VALKEA)) {
+				siirrot.push_back(Siirto("e8c8"));
+			}
+		}
+	}
+}
+
 void Asema::tyhjenna()
 {
 	for (int rivi = 0; rivi < 8; ++rivi)
@@ -96,6 +123,59 @@ void Asema::tee_siirto(const Siirto& s)
 
 	// Sijoitetaan loppuruutuun alkuper‰inen nappula.
 	_lauta[s._l_r][s._l_l] = nappula;
+
+	// Tutkitaan, oliko siirto linnoitus. Jos oli, niin pit‰‰
+	// Siirt‰‰ myˆs tornia. Huom! Linnoitussiirron alku- ja loppukoordinaatit
+	// ovat kuninkaan alku- ja loppukoordinaatit (esim. "e1g1").
+	if (nappula == wK && s._a_r == 7 && s._a_l == 4 && s._l_r == 7 && s._l_l == 6) {
+		// Valkean lyhyt linnoitus
+		_lauta[7][7] = NA;
+		_lauta[7][5] = wR;
+	}
+	else if (nappula == wK && s._a_r == 7 && s._a_l == 4 && s._l_r == 7 && s._l_l == 2) {
+		// Valkean pitk‰ linnoitus
+		_lauta[7][0] = NA;
+		_lauta[7][3] = wR;
+	}else if (nappula == bK && s._a_r == 0 && s._a_l == 4 && s._l_r == 0 && s._l_l == 6) {
+		// Mustan lyhyt linnoitus
+		_lauta[0][7] = NA;
+		_lauta[0][5] = bR;
+	}
+	else if (nappula == bK && s._a_r == 0 && s._a_l == 4 && s._l_r == 0 && s._l_l == 2) {
+		// Mustan pitk‰ linnoitus
+		_lauta[0][0] = NA;
+		_lauta[0][3] = bR;
+	}
+
+	// P‰ivitet‰‰n aseman linnoitus-flagit:
+	// Jos nappula on kuningas, niin linnoitus ei en‰‰ sallittu
+	//
+	// Jos siirron alku- tai loppuruutu on h1 (tai a1, h8, a8), niin
+	// linnoitus ko. suuntaan ei an‰‰ sallittu
+	//
+	// Siis: p‰ivitt‰k‰‰ _valkea_lyhyt_linna_sallittu jne.
+	// (tarpeen mukaan)
+	if (nappula == wK) {
+		_valkea_lyhyt_linna_sallittu == false;
+		_valkea_pitka_linna_sallittu == false;
+	}
+	else if (_lauta[7][0] != wR) {
+		_valkea_pitka_linna_sallittu == false;
+	}
+	else if (_lauta[7][7] != wR) {
+		_valkea_lyhyt_linna_sallittu == false;
+	}
+
+	if (nappula == bK) {
+		_musta_lyhyt_linna_sallittu == false;
+		_musta_pitka_linna_sallittu == false;
+	}
+	else if (_lauta[0][0] != bR) {
+		_musta_pitka_linna_sallittu == false;
+	}
+	else if (_lauta[0][7] != bR) {
+		_valkea_lyhyt_linna_sallittu == false;
+	}
 
 	// Vaihdetaan siirtovuoro.
 	_siirtovuoro = vastustaja(_siirtovuoro);
@@ -195,7 +275,7 @@ void Asema::anna_sotilaan_raakasiirrot(int rivi, int linja, int pelaaja,
 	int suunta = pelaaja == VALKEA ? -1 : 1;
 	int enPassantRivi = pelaaja == VALKEA ? 3 : 4;
 	if (rivi == alkuRivi) {
-		anna_raakasiirrot_suunnassa(rivi, linja, suunta + suunta, 0, pelaaja, 1, true, false, siirrot);
+		anna_raakasiirrot_suunnassa(rivi, linja, suunta, 0, pelaaja, 2, false, false, siirrot);
 	}else if (rivi == enPassantRivi) { // Voiko en passantissa syˆd‰ ns. kaksi nappulaa jos pawnin takana on toinen nappula?
 		if (linja + 1 <= 7 && _lauta[rivi][linja + 1] == vastustaja(pelaaja)) {
 			anna_raakasiirrot_suunnassa(rivi, linja, suunta, 1, pelaaja, 1, false, false, siirrot);
@@ -204,7 +284,10 @@ void Asema::anna_sotilaan_raakasiirrot(int rivi, int linja, int pelaaja,
 			anna_raakasiirrot_suunnassa(rivi, linja, suunta, -1, pelaaja, 1, false, false, siirrot);
 		}
 	}
-	anna_raakasiirrot_suunnassa(rivi, linja, suunta, 0, pelaaja, 1, false, false, siirrot);
+	else {
+		anna_raakasiirrot_suunnassa(rivi, linja, suunta, 0, pelaaja, 1, false, false, siirrot);
+	}
+	
 	anna_raakasiirrot_suunnassa(rivi, linja, suunta, 1, pelaaja, 1, true, true, siirrot);
 	anna_raakasiirrot_suunnassa(rivi, linja, suunta, -1, pelaaja, 1, true, true, siirrot);
 }
@@ -224,7 +307,7 @@ void Asema::etsi_nappula(int nappula, int& rivi, int& linja) const {
 	}
 }
 
-bool Asema::onko_ruutu_uhattu(int rivi, int linja, int uhkaava_pelaaaja) {
+bool Asema::onko_ruutu_uhattu(int rivi, int linja, int uhkaava_pelaaaja) const{
 	vector<Siirto> siirrot;
 	anna_kaikki_raakasiirrot(uhkaava_pelaaaja, siirrot);
 	for(int i = 0; i < siirrot.size(); i++)

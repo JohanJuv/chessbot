@@ -6,13 +6,18 @@
 class Siirto
 {
 public:
-	Siirto(int a_r, int a_l, int l_r, int l_l) :
-		_a_r(a_r), _a_l(a_l), _l_r(l_r), _l_l(l_l)
+	Siirto(int a_r, int a_l, int l_r, int l_l, int korotettava = NA) :
+		_a_r(a_r), _a_l(a_l), _l_r(l_r), _l_l(l_l), _korotettava_nappula(korotettava)
 	{}
 
 	// Parsi siirto stringistä
 	// esimn e2e4 tai g8f6
 	Siirto(const std::string& s);
+
+	// Muodostaa merkkijonon siirrosta.
+	std::wstring muodosta_string_siirrosta() const;
+
+	void print_siirto() const;
 
 private:
 
