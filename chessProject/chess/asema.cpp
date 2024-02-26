@@ -1,4 +1,5 @@
 #include "asema.h"
+#define NOMINMAX
 #include <Windows.h>
 #include <iostream>
 #include <string>
@@ -7,6 +8,7 @@
 #include <io.h>
 #include <iostream>
 #include <stdio.h>
+#include <map>
 using namespace std;
 
 
@@ -36,6 +38,128 @@ void Asema::anna_siirrot(vector<Siirto>& siirrot)
 		}
 
 	}
+}
+
+float Asema::pisteyta_lopputulos() const
+{
+	if (_siirtovuoro == VALKEA)
+	{
+		// Etsit‰‰n valkean kuningas
+		int rivi, linja;
+		etsi_nappula(wK, rivi, linja);
+
+		// Onko valkean kuningas uhattu?
+		if (onko_ruutu_uhattu(rivi, linja, MUSTA))
+			return -1000000; // musta on tehnyt matin
+		else
+			return 0; // patti
+	}
+	else
+	{
+		// Etsit‰‰n valkean kuningas
+		int rivi, linja;
+		etsi_nappula(bK, rivi, linja);
+
+		// Onko valkean kuningas uhattu?
+		if (onko_ruutu_uhattu(rivi, linja, VALKEA))
+			return 1000000; // musta on tehnyt matin
+		else
+			return 0; // patti
+	}
+}
+
+float Asema::evaluoi() const
+{
+	return 1.0f * materiaali() + 0.1f * mobiliteetti();
+
+	// TODO
+	// t‰ydent‰k‰‰ halutessanne uusilla pisteytett‰vill‰ aseman piirteill‰
+}
+
+MinimaxArvo Asema::minimax(int syvyys)
+{
+	// Generoidaan aseman siirrot.
+	vector<Siirto> siirrot;
+	anna_siirrot(siirrot);
+
+	if (siirrot.size() == 0)
+	{
+		// Rekursion kantatapaus 1:
+		// peli on p‰‰ttynyt (ei yht‰‰n laillista siirtoa).
+		return MinimaxArvo(pisteyta_lopputulos(), Siirto());
+	}
+
+	if (syvyys == 0)
+	{
+		// Rekursion kantatapaus 2:
+		// ollaan katkaisusyvyydess‰.
+		return MinimaxArvo(evaluoi(), Siirto());
+	}
+
+	// Siirtoja on j‰ljell‰ ja ei olla katkaisusyvyydess‰,
+	// joten kokeillaan yksitellen mahdollisia siirtoja,
+	// ja kutsutaan minimax:a kullekin seuraaja-asemalle.
+	// Otetaan paras minimax-arvo talteen (alustetaan
+	// paras_arvo mahdollisimman huonoksi siirtovuoroisen
+	// pelaajan kannalta).
+	float paras_arvo = _siirtovuoro == VALKEA ?
+		numeric_limits<float>::lowest() : numeric_limits<float>::max();
+	Siirto paras_siirto;
+	for (Siirto& s : siirrot)
+	{
+		Asema uusi = *this;
+		uusi.tee_siirto(s);
+
+		// Rekursioasekel: kutsutaan minimax:ia seuraaja-asemalle.
+		MinimaxArvo arvo = uusi.minimax(syvyys - 1);
+
+		// Jos saatiin paras arvo, otetaan se talteen.
+		if (_siirtovuoro == VALKEA && arvo._arvo > paras_arvo)
+		{
+			paras_arvo = arvo._arvo;
+			paras_siirto = s;
+		}
+		else if (_siirtovuoro == MUSTA && arvo._arvo < paras_arvo)
+		{
+			paras_arvo = arvo._arvo;
+			paras_siirto = s;
+		}
+	}
+
+	// Palautetaan paras arvo.
+	return MinimaxArvo(paras_arvo, paras_siirto);
+}
+
+float Asema::materiaali() const
+{
+	// Liitet‰‰n nappulatyyppeihin niiden arvot.
+	static map<int, float> nappuloiden_arvot = {
+		{wP,  1.0f}, {wN,  3.0f}, {wB,  3.0f}, {wR,  5.0f}, {wQ,  9.0f},
+		{bP, -1.0f}, {bN, -3.0f}, {bB, -3.0f}, {bR, -5.0f}, {bQ, -9.0f},
+		{NA,  0.0f}
+	};
+
+	float arvo = 0;
+	for (int rivi = 0; rivi < 8; ++rivi)
+		for (int linja = 0; linja < 8; ++linja)
+		{
+			int nappula = _lauta[rivi][linja];
+			arvo += nappuloiden_arvot[nappula];
+		}
+	return arvo;
+}
+
+float Asema::mobiliteetti() const
+{
+	vector<Siirto> valkean_siirrot;
+	vector<Siirto> mustan_siirrot;
+
+	// Funktion totetus on raskas, koska generoidaan raakasiirtoja.
+	// TODO: voisiko optimoida optimoida jotenkin?
+	anna_kaikki_raakasiirrot(VALKEA, valkean_siirrot);
+	anna_kaikki_raakasiirrot(MUSTA, mustan_siirrot);
+
+	return (float)valkean_siirrot.size() - (float)mustan_siirrot.size();
 }
 
 void Asema::anna_kaikki_raakasiirrot(int pelaaja, std::vector<Siirto>& siirrot) const
@@ -156,25 +280,25 @@ void Asema::tee_siirto(const Siirto& s)
 	// Siis: p‰ivitt‰k‰‰ _valkea_lyhyt_linna_sallittu jne.
 	// (tarpeen mukaan)
 	if (nappula == wK) {
-		_valkea_lyhyt_linna_sallittu == false;
-		_valkea_pitka_linna_sallittu == false;
+		_valkea_lyhyt_linna_sallittu = false;
+		_valkea_pitka_linna_sallittu = false;
 	}
 	else if (_lauta[7][0] != wR) {
-		_valkea_pitka_linna_sallittu == false;
+		_valkea_pitka_linna_sallittu = false;
 	}
 	else if (_lauta[7][7] != wR) {
-		_valkea_lyhyt_linna_sallittu == false;
+		_valkea_lyhyt_linna_sallittu = false;
 	}
 
 	if (nappula == bK) {
-		_musta_lyhyt_linna_sallittu == false;
-		_musta_pitka_linna_sallittu == false;
+		_musta_lyhyt_linna_sallittu = false;
+		_musta_pitka_linna_sallittu = false;
 	}
 	else if (_lauta[0][0] != bR) {
-		_musta_pitka_linna_sallittu == false;
+		_musta_pitka_linna_sallittu = false;
 	}
 	else if (_lauta[0][7] != bR) {
-		_valkea_lyhyt_linna_sallittu == false;
+		_valkea_lyhyt_linna_sallittu = false;
 	}
 
 	// Vaihdetaan siirtovuoro.

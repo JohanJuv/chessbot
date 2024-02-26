@@ -6,6 +6,10 @@
 class Siirto
 {
 public:
+
+	Siirto()
+	{}
+
 	Siirto(int a_r, int a_l, int l_r, int l_l, int korotettava = NA) :
 		_a_r(a_r), _a_l(a_l), _l_r(l_r), _l_l(l_l), _korotettava_nappula(korotettava)
 	{}
@@ -19,6 +23,15 @@ public:
 
 	void print_siirto() const;
 
+	// Vertailuoperaattori: ovatko kaksi siirto-oliota identtisiä?
+	bool operator==(const Siirto& rhs)
+	{
+		if (_a_r == rhs._a_r && _a_l == rhs._a_l && _l_r == rhs._l_r && _l_l == rhs._l_l) {
+			return true;
+		}
+		return false;
+	}
+
 private:
 
 	int _a_r; // Siirron alkuruudun rivi
@@ -28,6 +41,7 @@ private:
 	int _l_l; // Siirron loppuruudun linja (eli sarake)
 
 	int _korotettava_nappula = NA; // esim. wQ, wR, bN jne.
+	bool _ohestalyonti = false;
 
 	friend class Asema;
 };

@@ -4,6 +4,20 @@
 #include "siirto.h"
 
 
+// Minimax-funktion palauttama arvo. Sis‰lt‰‰ sek‰
+// minimax-arvon ett‰ sit‰ vastaavan parhaan siirron.
+class MinimaxArvo
+{
+public:
+	MinimaxArvo(float arvo, Siirto siirto) :
+		_arvo(arvo), _siirto(siirto)
+	{}
+
+	float	_arvo;
+	Siirto	_siirto;
+};
+
+
 class Asema
 {
 public:
@@ -26,6 +40,52 @@ public:
 	// SIirtogeneraattori
 	// Tuottaa aseman kaikki lailliset siirrot.
 	void anna_siirrot(std::vector<Siirto>& siirrot);
+	
+	// Pisteytt‰‰ pelin lopputuloksen seuraavasti:
+	//
+	// Valkea tehnyt matin			1000000
+	// Tasapeli (patti)				0
+	// Musta tehnyt matin		   -1000000
+	//
+	// Funktiota kutsutaan, kun asemassa ei ole en‰‰ yht‰‰n laillista
+	// siirtoa (anna_siirrot on palattanyt tyhj‰n siirtovektorin).
+	//
+	float pisteyta_lopputulos() const;
+
+	// Pisteytt‰‰ shakkiaseman heuristisesti.
+	float evaluoi() const;
+
+	//
+	// Palauttaa aseman minimax-arvon. Syvyys m‰‰ritt‰‰,
+	// kuinka monta asekelta syvemm‰lle pelipuuta k‰yd‰‰n l‰pi.
+	//
+	// Testaaminen esim. p‰‰ohjelmasta:
+	//
+	// Asema asema;
+	// MinimaxArvo arvo = asema.minimax(4);
+	// 
+	// Nyt tietokoneen siirto saadaan pelattua n‰in:
+	// asema.tee_siirto(arvo._siirto);
+	//
+	MinimaxArvo minimax(int syvyys);
+
+
+
+	// Laskee materiaalitasapainon (valkean nappuloiden arvo - mustan nappuloiden arvo).
+	// Nappuloiden arvot:
+	//
+	// sotilas		1
+	// ratsu		3
+	// l‰hetti		3
+	// torni		5
+	// daami		9
+	//
+	float materiaali() const;
+
+
+	// Palauttaa valkean ja mustan (raaka)siirtojen lukum‰‰rien erotuksen.
+	float mobiliteetti() const;
+
 
 	void anna_linnoitukset(int pelaaja, std::vector<Siirto>& siirrot) const;
 	
