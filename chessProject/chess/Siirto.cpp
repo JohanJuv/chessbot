@@ -11,6 +11,7 @@ Siirto::Siirto(const std::string& s)
 	_a_l = (int)s[0] - 97;
 	_l_r = 56 - (int)s[3];
 	_l_l = (int)s[2] - 97;
+	
 }
 
 
