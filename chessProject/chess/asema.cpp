@@ -196,7 +196,7 @@ int Asema::dynaaminenHakuSyvyys() const{
 		// Endgame phase
 		dynamicHaku = 4; // Shallow search during endgame
 	}
-	return 8;
+	return 2;
 }
 
 MinimaxArvo Asema::etsi_siirto() {
