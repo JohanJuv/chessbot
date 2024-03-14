@@ -16,7 +16,7 @@ public:
 
 	// Parsi siirto stringistä
 	// esimn e2e4 tai g8f6
-	Siirto(const std::string& s);
+	Siirto(const std::string& s, int vari);
 
 	// Muodostaa merkkijonon siirrosta.
 	std::wstring muodosta_string_siirrosta() const;
@@ -26,7 +26,8 @@ public:
 	// Vertailuoperaattori: ovatko kaksi siirto-oliota identtisiä?
 	bool operator==(const Siirto& rhs)
 	{
-		if (_a_r == rhs._a_r && _a_l == rhs._a_l && _l_r == rhs._l_r && _l_l == rhs._l_l) {
+		if (_a_r == rhs._a_r && _a_l == rhs._a_l && _l_r == rhs._l_r && _l_l == rhs._l_l 
+			&& rhs._korotettava_nappula == _korotettava_nappula) {
 			return true;
 		}
 		return false;

@@ -9,6 +9,9 @@
 #include <iostream>
 #include <stdio.h>
 #include <map>
+#include <list>
+#include <future>
+#include <unordered_map>
 using namespace std;
 
 
@@ -68,32 +71,167 @@ float Asema::pisteyta_lopputulos() const
 	}
 }
 
+float Asema::sotilaidenRakenneEvaluaatio() const{
+	float sotilaanRakenneArvo = 0;
+	for (int i = 0; i < 8; ++i) {
+		for (int j = 0; j < 8; ++j) {
+			if (_lauta[i][j] == wP) {
+				// Plussaa etenmisest‰
+				if (i == 1) {
+					sotilaanRakenneArvo += 10;
+				}
+				// Miinusta yksin j‰‰misest‰
+				if ((j > 0 && _lauta[i][j - 1] != wP) && (j < 7 && _lauta[i][j + 1] != wP)) {
+					sotilaanRakenneArvo -= 5;
+				}
+				// Miinusta p‰‰llekk‰isist‰
+				for (int k = i + 1; k < 8; ++k) {
+					if (_lauta[k][j] == wP) {
+						sotilaanRakenneArvo -= 5;
+						break;
+					}
+				}
+			}
+		}
+	}
+	for (int i = 0; i < 8; ++i) {
+		for (int j = 0; j < 8; ++j) {
+			if (_lauta[i][j] == bP) {
+				if (i == 6) {
+					sotilaanRakenneArvo -= 10;
+				}
+				if ((j > 0 && _lauta[i][j - 1] != bP) && (j < 7 && _lauta[i][j + 1] != bP)) {
+					sotilaanRakenneArvo += 5;
+				}
+				for (int k = i - 1; k >= 0; --k) {
+					if (_lauta[k][j] == bP) {
+						sotilaanRakenneArvo += 5;
+						break;
+					}
+				}
+			}
+		}
+	}
+	return sotilaanRakenneArvo;
+}
+
+float Asema::kuninkaanTurvaEvaluaatio() const {
+	float kuninkaanTurvaArvo = 0;
+
+	int vKunkunRivi, vKunkunLinja;
+	etsi_nappula(wK, vKunkunRivi, vKunkunLinja);
+	int mKunkunRivi, mKunkunLinja;
+	etsi_nappula(bK, mKunkunRivi, mKunkunLinja);
+
+	// Miinusta jos sotilaÌta ei ole kuninkaan edess‰ 
+	for (int i = vKunkunRivi + 1; i < 8; ++i) {
+		if (_lauta[i][vKunkunLinja] == wP) {
+			kuninkaanTurvaArvo += 5;
+			break;
+		}
+	}
+	for (int r = -1; r <= 1; ++r) {
+		for (int l = -1; l <= 1; ++l) {
+			int uusiRivi = vKunkunRivi + r;
+			int uusiLinja = vKunkunLinja + l;
+			if (on_rajojen_sisalla(uusiLinja) && on_rajojen_sisalla(uusiLinja) &&
+				(r != 0 || l != 0) && _lauta[uusiRivi][uusiLinja] == wP) {
+				kuninkaanTurvaArvo += 3;
+			}
+		}
+	}
+
+	for (int i = mKunkunRivi - 1; i >= 0; --i) {
+		if (_lauta[i][mKunkunLinja] == bP) {
+			kuninkaanTurvaArvo -= 5;
+			break;
+		}
+	}
+	for (int r = -1; r <= 1; ++r) {
+		for (int l = -1; l <= 1; ++l) {
+			int uusiRivi = mKunkunRivi + r;
+			int uusiLinja = mKunkunLinja + l;
+			if (on_rajojen_sisalla(uusiLinja) && on_rajojen_sisalla(uusiRivi) &&
+				(r != 0 || l != 0) && _lauta[uusiRivi][uusiLinja] == bP) {
+				kuninkaanTurvaArvo -= 3;
+			}
+		}
+	}
+	return kuninkaanTurvaArvo;
+}
+
+
 float Asema::evaluoi() const
 {
-	return 1.0f * materiaali() + 0.1f * mobiliteetti();
+	return 1.0f * materiaali() + 0.1f * mobiliteetti() + 0.1f * sotilaidenRakenneEvaluaatio();
 
 	// TODO
 	// t‰ydent‰k‰‰ halutessanne uusilla pisteytett‰vill‰ aseman piirteill‰
 }
 
-MinimaxArvo Asema::minimax(int syvyys)
+float Asema::laske_pelin_tila() const{
+	int nappuloita = 0;
+	for (int rivi = 0; rivi < 8; ++rivi) {
+		for (int linja = 0; linja < 8; ++linja) {
+			if (_lauta[rivi][linja] != NA)
+				nappuloita++;
+		}
+	}
+	// Game phase calculation (0: opening, 0.5: middlegame, 1: endgame)
+	return min(1.0, max(0.0, 1.0 - nappuloita / 32.0));
+}
+
+int Asema::dynaaminenHakuSyvyys() const{
+	float materiaaliArvo = materiaali();
+	float pelinTila = laske_pelin_tila();
+
+	int dynamicHaku = 2; // Default depth
+	if (pelinTila < 0.5) {
+		// Opening/Middlegame phase
+		if (abs(materiaaliArvo) < 100) {
+			dynamicHaku = 3;
+		}
+	}
+	else {
+		// Endgame phase
+		dynamicHaku = 4; // Shallow search during endgame
+	}
+	return 8;
+}
+
+MinimaxArvo Asema::etsi_siirto() {
+	constexpr float alpha = numeric_limits<float>::lowest();
+	constexpr float beta = numeric_limits<float>::max();
+	unordered_map<size_t, float> tTable;
+	return minimax(dynaaminenHakuSyvyys(), alpha, beta, tTable);
+}
+
+MinimaxArvo Asema::minimax(int syvyys, float alpha, float beta, TranspositionTable& asemaTable)
 {
 	// Generoidaan aseman siirrot.
 	vector<Siirto> siirrot;
 	anna_siirrot(siirrot);
 
+
+	// Rekursion kantatapaus 1:
+	// peli on p‰‰ttynyt (ei yht‰‰n laillista siirtoa).
 	if (siirrot.size() == 0)
 	{
-		// Rekursion kantatapaus 1:
-		// peli on p‰‰ttynyt (ei yht‰‰n laillista siirtoa).
 		return MinimaxArvo(pisteyta_lopputulos(), Siirto());
 	}
 
+	// Rekursion kantatapaus 2
 	if (syvyys == 0)
 	{
-		// Rekursion kantatapaus 2:
-		// ollaan katkaisusyvyydess‰.
-		return MinimaxArvo(evaluoi(), Siirto());
+		pair<bool, float> tallennettuAsema = retrieveFromTranspositionTable(asemaTable);
+		bool loydetty = tallennettuAsema.first;
+		float asemanArvo = tallennettuAsema.second;
+		if (loydetty) {
+			return MinimaxArvo(asemanArvo, Siirto());
+		}
+		float evalArvo = evaluoi();
+		storeInTranspositionTable(asemaTable, evalArvo);
+		return MinimaxArvo(evalArvo, Siirto());
 	}
 
 	// Siirtoja on j‰ljell‰ ja ei olla katkaisusyvyydess‰,
@@ -109,11 +247,13 @@ MinimaxArvo Asema::minimax(int syvyys)
 	{
 		Asema uusi = *this;
 		uusi.tee_siirto(s);
+//		future<MinimaxArvo> fut = async(launch::async, &Asema::minimax, uusi, syvyys - 1, alpha, beta, asemaTable);
+//		MinimaxArvo newz = fut.get();
+		MinimaxArvo arvo = uusi.minimax(syvyys - 1, alpha, beta, asemaTable);
+		if (arvo._arvo == NULL) {
+			break;
+		}
 
-		// Rekursioasekel: kutsutaan minimax:ia seuraaja-asemalle.
-		MinimaxArvo arvo = uusi.minimax(syvyys - 1);
-
-		// Jos saatiin paras arvo, otetaan se talteen.
 		if (_siirtovuoro == VALKEA && arvo._arvo > paras_arvo)
 		{
 			paras_arvo = arvo._arvo;
@@ -124,6 +264,26 @@ MinimaxArvo Asema::minimax(int syvyys)
 			paras_arvo = arvo._arvo;
 			paras_siirto = s;
 		}
+
+		// Alpha-beta prunaus, miksi tulee huonoja siirtoja?
+		//if (_siirtovuoro == VALKEA) {
+		//	alpha = max(alpha, arvo._arvo);
+		//	if (beta <= alpha)
+		//		break; // Beta karsinta
+		//	if (arvo._arvo > paras_arvo) {
+		//		paras_arvo = arvo._arvo;
+		//		paras_siirto = s;
+		//	}
+		//}
+		//else {
+		//	beta = min(beta, arvo._arvo);
+		//	if (beta <= alpha)
+		//		break; // Alpha karsinta
+		//	if (arvo._arvo < paras_arvo) {
+		//		paras_arvo = arvo._arvo;
+		//		paras_siirto = s;
+		//	}
+		//}
 	}
 
 	// Palautetaan paras arvo.
@@ -203,27 +363,28 @@ void Asema::anna_kaikki_raakasiirrot(int pelaaja, std::vector<Siirto>& siirrot) 
 }
 
 
+
 void Asema::anna_linnoitukset(int pelaaja, std::vector<Siirto>& siirrot) const {
 	if (pelaaja == VALKEA) {
 		// Onko valkea kuningas uhattu
 		if (!onko_ruutu_uhattu(7, 4, MUSTA)) {
 			if (_valkea_lyhyt_linna_sallittu && _lauta[7][5] == NA && _lauta[7][6] == NA && !onko_ruutu_uhattu(7, 5, MUSTA)) {
-				siirrot.push_back(Siirto("e1g1"));
+				siirrot.push_back(Siirto(7, 4, 7, 6));
 			}
 			if (_valkea_pitka_linna_sallittu && _lauta[7][1] == NA && _lauta[7][2] == NA && _lauta[7][3] == NA &&
 				_lauta[7][6] == NA && !onko_ruutu_uhattu(7, 3, MUSTA)) {
-				siirrot.push_back(Siirto("e1c1"));
+				siirrot.push_back(Siirto(7, 4, 7, 2));
 			}
 		}
 	}
 	else {
 		if (!onko_ruutu_uhattu(0, 4, VALKEA)) {
 			if (_musta_lyhyt_linna_sallittu && _lauta[0][5] == NA && _lauta[0][6] == NA && !onko_ruutu_uhattu(0, 5, VALKEA)) {
-				siirrot.push_back(Siirto("e8g8"));
+				siirrot.push_back(Siirto(0, 4, 0, 6));
 			}
-			if (_musta_pitka_linna_sallittu && _lauta[0][1] == NA && _lauta[0][2] == NA && _lauta[0][3] == NA &&
-				_lauta[0][6] == NA && !onko_ruutu_uhattu(0, 3, VALKEA)) {
-				siirrot.push_back(Siirto("e8c8"));
+			if (_musta_pitka_linna_sallittu && _lauta[0][1] == NA && _lauta[0][2] == NA && _lauta[0][3] == NA
+				&& !onko_ruutu_uhattu(0, 3, VALKEA) && !onko_ruutu_uhattu(0, 2, VALKEA)) {
+				siirrot.push_back(Siirto(0, 4, 0, 2));
 			}
 		}
 	}
@@ -242,11 +403,30 @@ void Asema::tee_siirto(const Siirto& s)
 	// Otetaan alkuruudussa oleva nappula talteen.
 	int nappula = _lauta[s._a_r][s._a_l];
 
+	// P‰ivitet‰‰n aseman kaksoisaskel-rivi:
+	// Jos nappula on sotilas, niin asetetaan ko. kaksoisaskelriviksi
+	// Muuten -1
+	if (nappula == wP || nappula == bP) {
+		if (abs(s._a_r - s._l_r) == 2) {
+			_kaksoisaskel_linjalla = s._a_l;
+		}
+		else {
+			_kaksoisaskel_linjalla = -1;
+		}
+		if (s._a_l != s._l_l && _lauta[s._l_r][s._l_l] == NA) {
+			_lauta[s._a_r][s._l_l] = NA;
+		}
+	}
+	else {
+		_kaksoisaskel_linjalla = -1;
+	}
+
 	// Tyhjennet‰‰n alkuruutu.
 	_lauta[s._a_r][s._a_l] = NA;
 
 	// Sijoitetaan loppuruutuun alkuper‰inen nappula.
 	_lauta[s._l_r][s._l_l] = nappula;
+
 
 	// Tutkitaan, oliko siirto linnoitus. Jos oli, niin pit‰‰
 	// Siirt‰‰ myˆs tornia. Huom! Linnoitussiirron alku- ja loppukoordinaatit
@@ -301,6 +481,10 @@ void Asema::tee_siirto(const Siirto& s)
 		_valkea_lyhyt_linna_sallittu = false;
 	}
 
+	if (s._korotettava_nappula != NA) {
+		_lauta[s._l_r][s._l_l] = s._korotettava_nappula;
+	}
+
 	// Vaihdetaan siirtovuoro.
 	_siirtovuoro = vastustaja(_siirtovuoro);
 }
@@ -317,7 +501,7 @@ void Asema::anna_raakasiirrot_suunnassa(int rivi, int linja, int rivi_muutos, in
 		linja_nyt += linja_muutos;
 
 		// Ulkona laudalta?
-		if (rivi_nyt < 0 || rivi_nyt > 7 || linja_nyt < 0 || linja_nyt > 7)
+		if (rivi_nyt > 7 || rivi_nyt < 0 || linja_nyt > 7 || linja_nyt < 0)
 			break;
 
 		// Tyhj‰ ruutu?
@@ -341,6 +525,12 @@ void Asema::anna_raakasiirrot_suunnassa(int rivi, int linja, int rivi_muutos, in
 	}
 }
 
+bool Asema::on_rajojen_sisalla(int rivi_tai_linja) const{
+	if (rivi_tai_linja > 7 || rivi_tai_linja < 0) {
+		return false;
+	}
+	return true;
+}
 void Asema::anna_tornin_raakasiirrot(int rivi, int linja, int pelaaja,
 	vector<Siirto>& siirrot) const
 {
@@ -398,22 +588,77 @@ void Asema::anna_sotilaan_raakasiirrot(int rivi, int linja, int pelaaja,
 	int alkuRivi = pelaaja == VALKEA ? 6 : 1;
 	int suunta = pelaaja == VALKEA ? -1 : 1;
 	int enPassantRivi = pelaaja == VALKEA ? 3 : 4;
+	int korotusRivi = pelaaja == VALKEA ? 0 : 7;
 	if (rivi == alkuRivi) {
-		anna_raakasiirrot_suunnassa(rivi, linja, suunta, 0, pelaaja, 2, false, false, siirrot);
-	}else if (rivi == enPassantRivi) { // Voiko en passantissa syˆd‰ ns. kaksi nappulaa jos pawnin takana on toinen nappula?
-		if (linja + 1 <= 7 && _lauta[rivi][linja + 1] == vastustaja(pelaaja)) {
+		anna_raakasiirrot_suunnassa(rivi, linja, suunta+suunta, 0, pelaaja, 1, false, false, siirrot);
+	}else if (_kaksoisaskel_linjalla != -1 && rivi == enPassantRivi) {
+		if (linja + 1 == _kaksoisaskel_linjalla) {
 			anna_raakasiirrot_suunnassa(rivi, linja, suunta, 1, pelaaja, 1, false, false, siirrot);
+			//siirrot.push_back(Siirto(rivi, linja, rivi + suunta, _kaksoisaskel_linjalla));
 		}
-		if (linja - 1 >= 0 && _lauta[rivi][linja - 1] == vastustaja(pelaaja)) {
+		else if (linja - 1 == _kaksoisaskel_linjalla) {
 			anna_raakasiirrot_suunnassa(rivi, linja, suunta, -1, pelaaja, 1, false, false, siirrot);
+			//siirrot.push_back(Siirto(rivi, linja, rivi + suunta, _kaksoisaskel_linjalla));
 		}
+	}
+	
+	if (korotusRivi == (rivi + suunta)) {
+		if (pelaaja == VALKEA) {
+			if (_lauta[rivi + suunta][linja] == NA) {
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja, wQ));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja, wB));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja, wR));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja, wN));
+			}
+			if (on_rajojen_sisalla(rivi + suunta) && on_rajojen_sisalla(linja + 1) 
+				&& _lauta[rivi + suunta][linja + 1] != NA 
+				&& nappulan_vari(_lauta[rivi + suunta][linja + 1]) == vastustaja(pelaaja)) {
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja + 1, wQ));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja + 1, wB));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja + 1, wR));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja + 1, wN));
+			}
+			if (on_rajojen_sisalla(rivi + suunta) && on_rajojen_sisalla(linja - 1)
+				&& _lauta[rivi + suunta][linja - 1] != NA 
+				&& nappulan_vari(_lauta[rivi + suunta][linja - 1]) == vastustaja(pelaaja)) {
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja - 1, wQ));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja - 1, wB));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja - 1, wR));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja - 1, wN));
+			}
+		}
+		else {
+			if (_lauta[rivi + suunta][linja] == NA) {
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja, bQ));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja, bB));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja, bR));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja, bN));
+			}
+			if (on_rajojen_sisalla(rivi + suunta) && on_rajojen_sisalla(linja + 1)
+				&& _lauta[rivi + suunta][linja + 1] != NA
+				&& nappulan_vari(_lauta[rivi + suunta][linja + 1]) == vastustaja(pelaaja)) {
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja + 1, bQ));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja + 1, bB));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja + 1, bR));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja + 1, bN));
+			}
+			if (on_rajojen_sisalla(rivi + suunta) && on_rajojen_sisalla(linja - 1)
+				&& _lauta[rivi + suunta][linja - 1] != NA 
+				&& nappulan_vari(_lauta[rivi + suunta][linja - 1]) == vastustaja(pelaaja)) {
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja - 1, bQ));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja - 1, bB));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja - 1, bR));
+				siirrot.push_back(Siirto(rivi, linja, rivi + suunta, linja - 1, bN));
+			}
+		}
+
 	}
 	else {
 		anna_raakasiirrot_suunnassa(rivi, linja, suunta, 0, pelaaja, 1, false, false, siirrot);
+		anna_raakasiirrot_suunnassa(rivi, linja, suunta, 1, pelaaja, 1, true, true, siirrot);
+		anna_raakasiirrot_suunnassa(rivi, linja, suunta, -1, pelaaja, 1, true, true, siirrot);
 	}
-	
-	anna_raakasiirrot_suunnassa(rivi, linja, suunta, 1, pelaaja, 1, true, true, siirrot);
-	anna_raakasiirrot_suunnassa(rivi, linja, suunta, -1, pelaaja, 1, true, true, siirrot);
+
 }
 
 
@@ -441,6 +686,35 @@ bool Asema::onko_ruutu_uhattu(int rivi, int linja, int uhkaava_pelaaaja) const{
 		}
 	}
 	return false;
+}
+
+size_t Asema::hashBoardState() const {
+	size_t hash = 0;
+	for (int i = 0; i < 8; ++i) {
+		for (int j = 0; j < 8; ++j) {
+			hash ^= std::hash<int>{}(_lauta[i][j])+0x9e3779b9 + (hash << 6) + (hash >> 2);
+		}
+	}
+	return hash;
+}
+
+void Asema::storeInTranspositionTable(TranspositionTable& table, float score) const {
+	size_t hash = hashBoardState();
+	table.insert(make_pair(hash, score));
+}
+
+bool Asema::isInTranspositionTable(const TranspositionTable& table) const {
+	size_t hash = hashBoardState();
+	return table.find(hash) != table.end();
+}
+
+pair<bool, float> Asema::retrieveFromTranspositionTable(const TranspositionTable& table) const {
+	size_t hash = hashBoardState();
+	auto it = table.find(hash);
+	if (it != table.end()) {
+		return { true, it->second };
+	}
+	return { false, 0 }; // Board state not found in the table
 }
 
 

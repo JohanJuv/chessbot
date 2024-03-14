@@ -2,6 +2,8 @@
 #include <vector>
 #include "shakki.h"
 #include "siirto.h"
+#include <chrono>
+#include <unordered_map>
 
 
 // Minimax-funktion palauttama arvo. Sis‰lt‰‰ sek‰
@@ -21,8 +23,15 @@ public:
 class Asema
 {
 public:
+	using TranspositionTable = std::unordered_map<size_t, float>;
 
+	std::size_t hashBoardState() const;
 
+	void storeInTranspositionTable(TranspositionTable& table, float score) const; 
+
+	bool isInTranspositionTable(const TranspositionTable& table) const; 
+
+	std::pair<bool, float> retrieveFromTranspositionTable(const TranspositionTable& table) const;
 
 	// Tyhjent‰‰ laudan.
 	void tyhjenna();
@@ -67,9 +76,9 @@ public:
 	// Nyt tietokoneen siirto saadaan pelattua n‰in:
 	// asema.tee_siirto(arvo._siirto);
 	//
-	MinimaxArvo minimax(int syvyys);
+	MinimaxArvo minimax(int syvyys, float alpha, float beta, TranspositionTable& transpositionTable);
 
-
+	MinimaxArvo etsi_siirto();
 
 	// Laskee materiaalitasapainon (valkean nappuloiden arvo - mustan nappuloiden arvo).
 	// Nappuloiden arvot:
@@ -86,10 +95,13 @@ public:
 	// Palauttaa valkean ja mustan (raaka)siirtojen lukum‰‰rien erotuksen.
 	float mobiliteetti() const;
 
+	int dynaaminenHakuSyvyys() const;
 
 	void anna_linnoitukset(int pelaaja, std::vector<Siirto>& siirrot) const;
-	
 
+	bool on_rajojen_sisalla(int rivi_tai_linja) const;
+	
+	float laske_pelin_tila() const;
 	// Generoidaan uhkaavan pelaaja raakasiirrot
 
 	// Tutkitaan, onko jonkin raakasiirron loppukoordinaatit == rivi, linka
@@ -147,15 +159,19 @@ public:
 	};
 	// Testausta varten
 	//int _lauta[8][8] = {
+	//{ bR, NA, NA, NA, bK, NA, NA, bR },
+	//{ bP, bP, bP, bP, bP, bP, bP, bP },
+	//{ NA, NA, wP, NA, NA, NA, NA, NA },
+	//{ wP, NA, NA, wP, NA, NA, NA, NA },
 	//{ NA, NA, NA, NA, NA, NA, NA, NA },
-	//{ NA, NA, NA, NA, NA, NA, NA, NA },
-	//{ NA, NA, NA, NA, NA, NA, NA, NA },
-	//{ NA, NA, NA, NA, NA, NA, NA, NA },
-	//{ NA, NA, NA, NA, NA, bR, NA, NA },
-	//{ NA, NA, NA, NA, NA, NA, NA, NA },
-	//{ NA, NA, NA, NA, NA, NA, NA, NA },
+	//{ NA, bP, NA, NA, NA, NA, NA, NA },
+	//{ wP, wP, wP, wP, wP, wP, wP, wP },
 	//{ NA, NA, NA, NA, wK, NA, NA, wR }
 	//};
+
+	float sotilaidenRakenneEvaluaatio() const;
+
+	float kuninkaanTurvaEvaluaatio() const;
 
 	int _siirtovuoro = VALKEA;
 
